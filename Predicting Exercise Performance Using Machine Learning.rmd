@@ -1,0 +1,78 @@
+---
+title: "Predicting Exercise Performance Using Machine Learning"
+author: "Khotami Fitri Karimah"
+date: "24/02/2025"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+Using data from accelerometers, we predict the manner in which individuals perform weightlifting exercises. The target variable is `classe`, which indicates the correctness of the exercise execution.
+
+## Load Libraries
+```{r}
+library(caret)
+library(randomForest)
+library(ggplot2)
+library(dplyr)
+```
+
+## Load and Explore Data
+```{r}
+train_url <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+test_url <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+
+train_data <- read.csv(train_url, na.strings = c("NA", "", "#DIV/0!"))
+test_data <- read.csv(test_url, na.strings = c("NA", "", "#DIV/0!"))
+
+str(train_data)
+summary(train_data)
+```
+
+## Data Preprocessing
+```{r}
+# Remove columns with many missing values
+train_data <- train_data[, colSums(is.na(train_data)) == 0]
+
+# Remove irrelevant columns (ID, timestamps, etc.)
+train_data <- train_data %>% select(-c(1:7))
+
+# Convert classe to factor
+train_data$classe <- as.factor(train_data$classe)
+```
+
+## Split Data into Training and Validation Sets
+```{r}
+set.seed(123)
+trainIndex <- createDataPartition(train_data$classe, p = 0.8, list = FALSE)
+train_set <- train_data[trainIndex, ]
+valid_set <- train_data[-trainIndex, ]
+```
+
+## Train a Random Forest Model
+```{r}
+set.seed(123)
+rf_model <- randomForest(classe ~ ., data = train_set, ntree = 100)
+```
+
+## Model Evaluation
+```{r}
+pred_valid <- predict(rf_model, valid_set)
+conf_matrix <- confusionMatrix(pred_valid, valid_set$classe)
+conf_matrix
+```
+
+## Prediction on Test Data
+```{r}
+test_data <- test_data[, colnames(test_data) %in% colnames(train_set)]
+test_predictions <- predict(rf_model, test_data)
+test_predictions
+```
+
+## Conclusion
+- **Random Forest performed well** on the validation set.
+- **The model predicts the exercise performance** with high accuracy.
+- **Predictions were made on 20 test cases.**
